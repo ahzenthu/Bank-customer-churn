@@ -1,0 +1,52 @@
+---
+title: "model3_dt"
+output:
+  word_document: default
+  html_document: default
+date: "2024-12-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load libraries
+library(rpart)
+library(rpart.plot)
+library(caret)
+data <- read.csv("/Users/ahzenthu/Downloads/Bank Customer Churn Prediction.csv")
+
+data$country <- factor(data$country)
+data$gender <- factor(data$gender)
+data$churn <- factor(ifelse(as.numeric(data$churn) < 0.2, 'no', 'yes'))
+
+set.seed(123) # For reproducibility
+sample_size <- floor(0.8 * nrow(data))
+train_ind <- sample(seq_len(nrow(data)), size = sample_size)
+train <- data[train_ind, ]
+test <- data[-train_ind, ]
+
+dt_model <- rpart(
+  churn ~ credit_score + country + gender + age + tenure + balance +
+          products_number + credit_card + active_member + estimated_salary,
+  data = train,
+  method = "class"
+)
+rpart.plot(dt_model, type = 3, extra = 102, fallen.leaves = TRUE)
+
+dt_pred <- predict(dt_model, newdata = test, type = "class")
+confusion <- confusionMatrix(dt_pred, test$churn)
+print(confusion)
+
+
+
+```
+The model is very effective at identifying customers who will not churn (97.06% sensitivity).
+This is critical when predicting outcomes for the majority class.
+The overall accuracy of 86.1%, indicating solid overall performance.
+Kappa value of 0.4792 indicates moderate agreement between predictions and actual outcomes.
+
+Specificity is only 42.68%, meaning the model struggles to correctly identify customers who will churn.
+The majority class dominates (not churn), which may bias the model towards predicting "no churn."
+overall, The decision tree model performs well in predicting customers who will not churn but struggles with identifying churn cases.

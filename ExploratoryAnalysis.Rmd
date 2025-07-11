@@ -1,0 +1,190 @@
+---
+title: "EDA"
+output:
+  word_document: default
+  pdf_document: default
+date: "2024-12-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reading in all files/packages
+
+```{r}
+data <-read.csv("/Users/ahzenthu/Downloads/Bank Customer Churn Prediction.csv")
+head(data)
+#bc churn is the target variable, lets split the data into churn and not churn
+churned <- data[data$churn == 1,]
+notchurned <- data[data$churn == 0,]
+head(churned)
+head(notchurned)
+```
+
+## stat summary
+
+```{r}
+# for the whole data, broad data check
+summary(data)
+str(data)
+#any missing values?
+sum(is.na(data))
+anyNA(data)
+```
+In the broad statistical summary of the dataset, (skipping over id) we see that the data has numerical and categorical data. 
+numerical data being credit score, age, tenure, balance, products number, and estimated salary.
+Categorical data being, country, gender, credit card (yes/no), active member (yes/no), and churn (yes/no)
+we also observe that there is no missing data values or NA's
+
+```{r}
+summary(churned)
+
+summary(notchurned)
+```
+
+the credit score range for not churned is smaller, yes, but the 1st Q, median, mean, 3rd Q, and max are too close for me to look hard at it.
+the age max and min are similar, but the 4 inner numbers (1st Q, median, mean, 3rd Q) are vastly different, churned is much higher, this requires investigation
+all 6 of the summary numbers in the tenure are very similar, no need.
+I notice that the balance 1st Q for churned is 0, while the 1st Q for not churned is 38k, this could be a huge predictor.
+There is a difference between the maxes of products owned, the pool is small with the mean being between 1 and 2 for both of them.
+it is clear to see that most have a credit card, not much of a difference between those who did or did not churn.
+the median for churned active member is 0 (no) and not churned active member is 1 (yes), the median for not churn being larger than churn too, this requires further investigation 
+
+## Visuals
+
+```{r}
+
+#age
+hist(churned$age, breaks = unique(churned$age), main = "Comparison of Churn and Not-Churn Ages", xlab = "Ages", col = rgb(0.8, 0.8, 0.8, 0.5), xlim = range(c(churned$age, notchurned$age)), freq = FALSE)
+hist(notchurned$age, breaks = unique(notchurned$age), col = rgb(0.2, 0.2, 0.8, 0.5), add = TRUE, freq = FALSE) 
+lines(density(churned$age), col = "red", lwd = 2)
+lines(density(notchurned$age), col = "blue", lwd = 2)
+legend("topright", 
+       legend = c("Churned", "Not Churned"), 
+       fill = c(rgb(1, 0, 0, 0.5), rgb(0, 0, 1, 0.5)), 
+       border = NA, 
+       bty = "n")
+
+#balance
+boxplot(churned$balance, notchurned$balance, 
+        horizontal = TRUE, 
+        names = c("Churned", "Not Churned"), 
+        col = c("red", "blue"),
+        main = "Comparison of Balance Amounts", 
+        xlab = "Balance Amounts")
+grid(nx = NULL, ny = NULL, col = "lightgray", lty = "dotted")
+
+
+#products number
+PNcounts <- table(data$products_number)
+barplot(PNcounts, main = "# of bank products", xlab = "amount", col = "grey")
+
+#est salary
+hist(churned$estimated_salary, 
+     breaks = 50, 
+     main = "Estimated Salaries Distribution (Churned vs Not Churned)", 
+     xlab = "Salaries", 
+     col = rgb(0.8, 0.8, 0.8, 0.5),
+     xlim = range(c(churned$estimated_salary, notchurned$estimated_salary)), 
+     freq = FALSE)
+hist(notchurned$estimated_salary, 
+     breaks = 50, 
+     col = rgb(0.2, 0.2, 0.8, 0.5),
+     add = TRUE, 
+     freq = FALSE)
+lines(density(churned$estimated_salary), col = "red", lwd = 2)
+lines(density(notchurned$estimated_salary), col = "blue", lwd = 2)
+legend("topright", 
+       legend = c("Churned", "Not Churned"), 
+       fill = c(rgb(1, 0, 0, 0.5), rgb(0, 0, 1, 0.5)), 
+       border = NA, 
+       bty = "n") 
+
+
+```
+there is a obvious difference between churned and not churned ages and balance amounts
+The large majority of the data has 1 or 2 bank products, I dont think its is reason enough to look at as a predictor
+not so much of a difference between the estimated salaries, so I wont focus on it
+
+```{r}
+#country
+churned_country_counts <- table(churned$country)
+notchurned_country_counts <- table(notchurned$country)
+country_counts_matrix <- rbind(churned_country_counts, notchurned_country_counts)
+barplot(country_counts_matrix,
+        beside = TRUE,
+        col = c("red", "blue"), 
+        main = "Country Distribution by Churn Status",
+        xlab = "Country",
+        ylab = "Count",
+        legend.text = c("Churned", "Not Churned"), 
+        args.legend = list(x = "topright")) 
+
+
+# gender
+churned_g_counts <- table(churned$gender)
+notchurned_g_counts <- table(notchurned$gender)
+g_counts_matrix <- rbind(churned_g_counts, notchurned_g_counts)
+barplot(g_counts_matrix,
+        beside = TRUE,
+        col = c("red", "blue"), 
+        main = "Gender Distribution by Churn",
+        xlab = "Gender",
+        ylab = "Count",
+        legend.text = c("Churned", "Not Churned"), 
+        args.legend = list(x = "top"))
+
+
+
+#active member
+churned_AM_counts <- table(churned$active_member)
+notchurned_AM_counts <- table(notchurned$active_member)
+AM_counts_matrix <- rbind(churned_AM_counts, notchurned_AM_counts)
+barplot(AM_counts_matrix,
+        beside = TRUE,
+        col = c("red", "blue"), 
+        main = "Active Member Distribution by Churn",
+        xlab = "Active member",
+        ylab = "Count",
+        legend.text = c("Churned", "Not Churned"), 
+        args.legend = list(x = "top"))
+
+#churn
+churncounts <- table(data$churn)
+CHpercents <- round(100*churncounts/sum(churncounts), 1)
+templabel <- c("no", "yes")
+names(churncounts) <- templabel
+CHlabels <-paste(templabel, churncounts, paste0( "(", CHpercents, "%)"))
+pie(churncounts, labels = CHlabels, main = "Churn distribution ", col = c("grey", "black"))
+```
+for country churned/notchurn distribution, it looks like france and spain are about the same with 1/5th being churn and 4/5th not churned but for germany, 1/3rd is churned and 2/3rds is not churned, this could hint at something being up with germany.
+for Gender, male and female look to be around the same with female churn count being slightly higher
+the active member chart suggests that less active member are more likely to churn, which is intuitive.
+for the data, 79.6% not churn. 20.4 yes churn
+
+
+## stat tests
+
+```{r}
+# correlation test age vs balance
+cor.test(data$balance, data$age)
+
+# chi squared test
+Contingency_table <- table(data$country, data$churn)
+print(Contingency_table)
+cst <- chisq.test(Contingency_table)
+print(cst)
+
+```
+
+While the correlation is statistically significant (p-value < 0.05), it is not practically meaningful because the correlation coefficient is extremely close to 0.
+Age and balance have almost no linear relationship. Factors other than age are likely more influential in determining a customer's balance.
+this weak correlation suggests that age is not a strong predictor of balance.
+
+
+the p value for country and churn is very small, which shows significance.
+The significant p-value suggests there is a strong association between Country and Churn. Customers from different countries are not equally likely to churn.
+Country could be a relevant predictor
+
+the x^2 being 300+ shows that there is a big diference between the observed and expected frequencies.

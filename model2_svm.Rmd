@@ -1,0 +1,55 @@
+---
+title: "model2_svm"
+output:
+  word_document: default
+  html_document: default
+date: "2024-12-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("caret")
+library("kernlab")
+library(ggplot2)
+
+data <- read.csv("/Users/ahzenthu/Downloads/Bank Customer Churn Prediction.csv")
+head(data)
+
+data$country <- factor(data$country)
+data$gender <- factor(data$gender)
+data$churn <- factor(ifelse(as.numeric(data$churn) < 0.2, 'no', 'yes'))
+
+sample_size <- floor(0.8 * nrow(data))
+train_ind <- sample(seq_len(nrow(data)), size = sample_size)
+train <- data[train_ind, ]
+test <- data[-train_ind, ]
+
+# had to change the CV bc my computer couldnt handle it well
+fitControl <- trainControl(method = "cv", number = 3, verboseIter = TRUE)
+
+grid <- expand.grid(degree = c(2), scale = c(0.01, 0.1), C = c(1))
+
+svmpoly <- train(
+  churn ~ credit_score + country + gender + age + tenure + balance + 
+          products_number + credit_card + active_member + estimated_salary,
+  data = train,
+  method = "svmPoly",
+  trControl = fitControl,
+  tuneGrid = grid
+)
+print(svmpoly)
+
+prediction_svmpoly<- predict(svmpoly, newdata = test)
+confusionMatrix(prediction_svmpoly, test$churn)
+```
+the accuracy is high 85+, which show this model is pretty good.
+the kappa shows moderate agreement, which shows that the model is strong.
+the sensitivity is very high which shows its strong at predicting when customers will not churn
+The model is excellent at identifying customers who will not churn (high sensitivity of 97).
+It achieves a high overall accuracy of 86.05%.
+The model struggles with identifying churn cases (low specificity of 36.6%).
+The low specificity could lead to missed opportunities for targeting at-risk customers.
+

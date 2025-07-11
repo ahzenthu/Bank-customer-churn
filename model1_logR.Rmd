@@ -1,0 +1,53 @@
+---
+title: "model1_LogR"
+output:
+  word_document: default
+  html_document: default
+date: "2024-12-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(caret)
+data <- read.csv("/Users/ahzenthu/Downloads/Bank Customer Churn Prediction.csv")
+head(data)
+
+data$country <- factor(data$country)
+data$gender <- factor(data$gender)
+
+sample_size <- floor(0.8 * nrow(data))
+train_ind <- sample(seq_len(nrow(data)), size = sample_size)
+train <- data[train_ind, ]
+test <- data[-train_ind, ]
+
+glm.fit <- glm(
+  churn ~ credit_score + country + gender + age + tenure + balance + 
+           products_number + credit_card + active_member + estimated_salary,
+  data = train,
+  family = binomial
+)
+
+predictedprob <- predict(glm.fit, newdata = test, type = "response")
+
+glm.pred <- ifelse(predictedprob > 0.5, "1", "0") 
+glm.pred <- factor(glm.pred, levels = c("0", "1")) 
+
+test$churn <- factor(test$churn, levels = c("0", "1"))
+CM <- confusionMatrix(glm.pred, test$churn) # Predicted first, reference second
+print(CM)
+```
+the model performs pretty well at predicting not churn cases with a high sensitivity and decent accuracy.
+the model is weak at correctly predicting churn cases, seen from the low specificity.
+the models precision is good at predicting not churn, 80+.
+but when the model predicts churn, it is only right 60 percent of the time.
+overall the model is better at predicting not churn than churn cases.
+
+The model performs well for predicting non-churn cases due to high sensitivity (96.6%) and decent accuracy (82.1%).
+It is good at predicting when a customer will not churn.
+
+The model struggles to correctly predict churn cases, as seen from the low specificity (23.1%).
+Low Kappa indicates the model is not very reliable when accounting for chance.
+
